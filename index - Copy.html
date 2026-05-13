@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>AI Onboarding Form Filler</title>
+  <style>
+    body { font-family: Arial; max-width: 800px; margin: 40px auto; padding: 20px; }
+    h1 { color: #1F4E79; }
+    .upload-box { border: 2px dashed #2E75B6; padding: 30px; text-align: center;
+                  border-radius: 8px; margin: 20px 0; background: #EBF3FB; }
+    button { background: #2E75B6; color: white; padding: 10px 25px;
+             border: none; border-radius: 5px; cursor: pointer; font-size: 16px; }
+    button:hover { background: #1F4E79; }
+    #status { margin: 15px 0; color: #555; font-style: italic; }
+    .field-box { background: #f9f9f9; border: 1px solid #ddd;
+                 border-radius: 6px; padding: 15px; margin: 10px 0; }
+    .field-label { font-weight: bold; color: #1F4E79; font-size: 13px; }
+    .field-row { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+    .field-value { flex: 1; padding: 8px; border: 1px solid #ccc;
+                   border-radius: 4px; font-size: 14px; background: white; }
+    .copy-btn { background: #375623; padding: 7px 14px; font-size: 13px; }
+    #results { display: none; }
+    .section-title { color: #2E75B6; font-size: 18px; font-weight: bold;
+                     margin: 25px 0 10px 0; border-bottom: 2px solid #2E75B6; padding-bottom: 5px; }
+  </style>
+</head>
+<body>
+
+  <h1>AI Onboarding Form Filler</h1>
+  <p>Upload customer PDF — AI extracts all fields for Zong Track portal.</p>
+
+  <div class="upload-box">
+    <input type="file" id="pdfFile" accept=".pdf"><br><br>
+    <button onclick="extractFields()">Extract Fields</button>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="results">
+    <div class="section-title">Extracted Fields — Copy into Zong Track Portal</div>
+
+    <div class="field-box">
+      <div class="field-label">Client Name</div>
+      <div class="field-row">
+        <input class="field-value" id="clientName" readonly>
+        <button class="copy-btn" onclick="copyField('clientName')">Copy</button>
+      </div>
+    </div>
+
+    <div class="field-box">
+      <div class="field-label">NTN Number</div>
+      <div class="field-row">
+        <input class="field-value" id="ntnNumber" readonly>
+        <button class="copy-btn" onclick="copyField('ntnNumber')">Copy</button>
+      </div>
+    </div>
+
+    <div class="field-box">
+      <div class="field-label">Admin Name (POC)</div>
+      <div class="field-row">
+        <input class="field-value" id="adminName" readonly>
+        <button class="copy-btn" onclick="copyField('adminName')">Copy</button>
+      </div>
+    </div>
+
+    <div class="field-box">
+      <div class="field-label">Master MSISDN / Username</div>
+      <div class="field-row">
+        <input class="field-value" id="msisdn" readonly>
+        <button class="copy-btn" onclick="copyField('msisdn')">Copy</button>
+      </div>
+    </div>
+
+    <div class="field-box">
+      <div class="field-label">Number for Notification</div>
+      <div class="field-row">
+        <input class="field-value" id="notifNumber" readonly>
+        <button class="copy-btn" onclick="copyField('notifNumber')">Copy</button>
+      </div>
+    </div>
+
+    <div class="field-box">
+      <div class="field-label">Email</div>
+      <div class="field-row">
+        <input class="field-value" id="email" readonly>
+        <button class="copy-btn" onclick="copyField('email')">Copy</button>
+      </div>
+    </div>
+
+    <div class="field-box">
+      <div class="field-label">Client City</div>
+      <div class="field-row">
+        <input class="field-value" id="city" readonly>
+        <button class="copy-btn" onclick="copyField('city')">Copy</button>
+      </div>
+    </div>
+
+    <div class="field-box">
+      <div class="field-label">Client Territory (Auto-Detected)</div>
+      <div class="field-row">
+        <input class="field-value" id="territory" readonly>
+        <button class="copy-btn" onclick="copyField('territory')">Copy</button>
+      </div>
+    </div>
+
+    <div class="field-box">
+      <div class="field-label">Number of Employees</div>
+      <div class="field-row">
+        <input class="field-value" id="employees" readonly>
+        <button class="copy-btn" onclick="copyField('employees')">Copy</button>
+      </div>
+    </div>
+
+    <div class="field-box">
+      <div class="field-label">Service Type</div>
+      <div class="field-row">
+        <input class="field-value" id="serviceType" readonly>
+        <button class="copy-btn" onclick="copyField('serviceType')">Copy</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"></script>
+  <script>
+
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+
+
+
+    
+   
+    async function extractFields() {
+      const file = document.getElementById('pdfFile').files[0];
+      if (!file) { alert('Please select a PDF first'); return; }
+
+      document.getElementById('status').innerHTML = 'Reading PDF...';
+      document.getElementById('results').style.display = 'none';
+
+      const arrayBuffer = await file.arrayBuffer();
+      const pdf = await pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+      let fullText = '';
+
+      for (let i = 1; i <= pdf.numPages; i++) {
+        const page = await pdf.getPage(i);
+        const content = await page.getTextContent();
+        const pageText = content.items.map(item => item.str).join(' ');
+        fullText += pageText + '\n';
+      }
+
+      console.log("PDF TEXT:", fullText);
+
+      if (!fullText.trim()) {
+        document.getElementById('status').innerHTML = 'Could not read PDF text.';
+        return;
+      }
+
+      document.getElementById('status').innerHTML = 'Sending to AI...';
+
+      const response = await fetch("https://api.groq.com/openai/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          "Authorization": "Bearer ====================="
+        },
+        body: JSON.stringify({
+          model: "llama-3.3-70b-versatile",
+          max_tokens: 1000,
+          messages: [{
+            role: "user",
+            content: `Extract these fields. Reply ONLY in this exact format:
+Client Name: 
+Client NTN: 
+Client POC: 
+MSISDN: 
+Client Notification: 
+Client Email: 
+City: 
+Employees: 
+Service Type: 
+
+If not found write: Not Found
+
+Text:
+${fullText}`
+          }]
+        })
+      });
+
+      const data = await response.json();
+      const text = data.choices[0].message.content;
+      console.log("AI RESPONSE:", text);
+
+      function getField(label) {
+        const lines = text.split('\n');
+        for (const line of lines) {
+          if (line.toLowerCase().startsWith(label.toLowerCase())) {
+            return line.split(':').slice(1).join(':').trim();
+          }
+        }
+        return 'Not Found';
+      }
+
+      const city = getField('City');
+      document.getElementById('clientName').value  = getField('Client Name');
+      document.getElementById('ntnNumber').value   = getField('Client NTN');
+      document.getElementById('adminName').value   = getField('Client POC');
+      document.getElementById('msisdn').value      = getField('MSISDN');
+      document.getElementById('notifNumber').value = getField('Client Notification');
+      document.getElementById('email').value       = getField('Client Email');
+      document.getElementById('city').value        = city;
+      document.getElementById('territory').value   = getTerritory(city);
+      document.getElementById('employees').value   = getField('Employees');
+      document.getElementById('serviceType').value = getField('Service Type');
+
+      document.getElementById('status').innerHTML = 'Done! Review and copy into portal.';
+      document.getElementById('results').style.display = 'block';
+    }
+
+    function copyField(id) {
+      navigator.clipboard.writeText(document.getElementById(id).value);
+    }
+
+    function getTerritory(city) {
+      city = city.toLowerCase();
+      if (['karachi','hyderabad','sukkur'].some(c => city.includes(c))) return 'Sindh';
+      if (['lahore','faisalabad','multan','sialkot','gujranwala'].some(c => city.includes(c))) return 'Punjab';
+      if (['islamabad','rawalpindi'].some(c => city.includes(c))) return 'Federal Area';
+      if (['peshawar','mardan'].some(c => city.includes(c))) return 'Khyber Pakhtunkhua';
+      if (['quetta'].some(c => city.includes(c))) return 'Balochistan';
+      return 'Please Select Manually';
+    }
+
+  
+  </script>
+
+</body>
+</html>
